@@ -1,5 +1,4 @@
 from SPARQLWrapper import SPARQLWrapper2, JSON
-from rdflib import Graph, Namespace
 from enum import Enum
 
 
@@ -10,17 +9,76 @@ class Endpoint(Enum):
 
 class SPARQLConstructor:
     """
-        General class for managing, retrieving and store data from any endpoint
+        Class for constructing query for any endpoint such as
+        WIKIDATA, DBPEDIA and so on ...
     """
 
+    def __init__(self, endpoint: Endpoint):
+        self._q_history = []
+        self.endpoint = endpoint
+        self.sparql = SPARQLWrapper2(endpoint.value)
+
+    # @property
+    # def query(self):
+    #     return self._query
+    #
+    # @query.setter
+    # def query(self, value):
+    #     self._query = value
+
+    @property
+    def q_history(self):
+        return self._q_history
+
+    def run_query(self, var_list, limit, return_format=JSON):
+        self.sparql.setReturnFormat(return_format)
+        self._construct_query(var_list, limit)
+        self.sparql.setQuery(self.query)
+        #
+        # result = None
+        # try:
+        #     result = self.sparql.query().bindings
+        #     for i in result:
+        #         for j in i.keys():
+        #             i[j] = i.get(j).value
+        # except Exception as e:
+        #     print(e)
+
+        # self.q_history.append(self.query)
+        # self.query = ''
+        # return result
+
+    def _construct_query(self, var_list, limit):
+        query = ''
+        # SELECT statement
+        self.query += 'SELECT '
+        if var_list:
+            for i in var_list:
+                self.query += '?' + str(i) + ' '
+
+        # WHERE statement
+        match self.endpoint:
+            case Endpoint.WIKIDATA:
+                self._wikidata_query()
+            case Endpoint.DBPEDIA:
+                self._dbpedia_query()
+
+        # ORDER BY, GROUP BY, LIMIT
+        self.query += f'LIMIT {limit}' if limit else ''
+
     @staticmethod
-    def create_query(*args, **kwargs):
+    def _select_statement():
+        pass
+    def _wikidata_query(self):
+        self.query += 'WHERE { } '
+
+    # TODO: add logic for dbpedia query
+    def _dbpedia_query(self):
         pass
 
 
 class University:
     def __init__(self, endpoint: Endpoint):
-        self.endpoint = endpoint
         self.sparql = SPARQLWrapper2(endpoint.value)
         # print(g.serialize(format='ttl'))
 
@@ -55,5 +113,6 @@ class University:
 
 
 if __name__ == '__main__':
-    print(City().get_cities_data(True, True))
+    constr = SPARQLConstructor(Endpoint.WIKIDATA)
+    constr.run_query(None, 0)
 
